@@ -19,14 +19,14 @@ const WHITE = { r: 1, g: 1, b: 1 };
 const PRIMARY = { r: 0.063, g: 0.725, b: 0.506 };
 const PRIMARY_PLACEHOLDER = { r: 0.063, g: 0.725, b: 0.506, a: 0.2 };
 // 暗色模式颜色
-const DARK_BG = { r: 0.196, g: 0.212, b: 0.235 };
-const DARK_SIDEBAR = { r: 0.196, g: 0.212, b: 0.235 };
-const DARK_BUBBLE_USER = { r: 0.216, g: 0.235, b: 0.263 };
-const DARK_BUBBLE_AI = { r: 0.196, g: 0.212, b: 0.235 };
+const DARK_BG = { r: 0.122, g: 0.161, b: 0.216 };
+const DARK_SIDEBAR = { r: 0.122, g: 0.161, b: 0.216 };
+const DARK_BUBBLE_USER = { r: 0.216, g: 0.255, b: 0.318 };
+const DARK_BUBBLE_AI = { r: 0.216, g: 0.255, b: 0.318 };
 const DARK_TEXT = { r: 0.976, g: 0.98, b: 0.984 };
 const DARK_TEXT_SUB = { r: 0.612, g: 0.639, b: 0.686 };
 const DARK_BORDER = { r: 0.294, g: 0.333, b: 0.388 };
-const DARK_INPUT_BG = { r: 0.294, g: 0.333, b: 0.388 };
+const DARK_INPUT_BG = { r: 0.216, g: 0.255, b: 0.318 };
 
 // =============================================
 // 辅助函数
