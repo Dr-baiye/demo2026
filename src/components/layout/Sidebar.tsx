@@ -1,6 +1,6 @@
 import { Plus, Settings, Trash2 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import type { Conversation } from '../../App';
+import type { Conversation } from '../../types';
 
 interface SidebarProps {
   conversations: Conversation[];
@@ -151,21 +151,6 @@ export default function Sidebar({ conversations, activeId, onSelect, onCreate, o
           设置
         </button>
       </div>
-
-      {/* 选中会话左侧翠绿色竖条 */}
-      <style>{`
-        .active-conversation::before {
-          content: '';
-          position: absolute;
-          left: 0;
-          top: 50%;
-          transform: translateY(-50%);
-          width: 2px;
-          height: 24px;
-          background-color: #10B981;
-          border-radius: 0 2px 2px 0;
-        }
-      `}</style>
     </aside>
   );
 }

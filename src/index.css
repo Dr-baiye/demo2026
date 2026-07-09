@@ -81,3 +81,16 @@ input[type='range'].temperature-slider::-moz-range-thumb {
 .dark input[type='range'].temperature-slider::-moz-range-thumb {
   border-color: #374151;
 }
+
+/* ---- 侧边栏选中会话指示条 ---- */
+.active-conversation::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 24px;
+  background-color: #10B981;
+  border-radius: 0 2px 2px 0;
+}

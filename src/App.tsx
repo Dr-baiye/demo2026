@@ -6,19 +6,7 @@ import { DarkModeProvider } from './hooks/useDarkMode';
 import Sidebar from './components/layout/Sidebar';
 import ChatPage from './pages/ChatPage';
 import SettingsPage from './pages/SettingsPage';
-
-export interface Conversation {
-  id: string;
-  title: string;
-  updatedAt: number;
-}
-
-interface SavedState {
-  conversations: Conversation[];
-  messagesMap: Record<string, Message[]>;
-  activeId: string;
-  convCounter: number;
-}
+import type { Conversation, AppSettings, SavedState } from './types';
 
 const STORAGE_KEY = 'fgima_state';
 
@@ -45,6 +33,19 @@ const seedConversations: Conversation[] = [
   { id: '2', title: 'React 组件设计思路', updatedAt: Date.now() - 7200000 },
 ];
 
+const defaultSettings: AppSettings = {
+  selectedModel: 'gpt-5.5',
+  customModels: [],
+  inferenceParams: {
+    temperature: 0.7,
+    topP: 0.9,
+    maxTokens: 4096,
+    frequencyPenalty: 0,
+    presencePenalty: 0,
+    seed: undefined,
+  },
+};
+
 function loadState(): SavedState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -56,7 +57,13 @@ function loadState(): SavedState {
         typeof parsed.activeId === 'string' &&
         typeof parsed.convCounter === 'number'
       ) {
-        return parsed;
+        return {
+          conversations: parsed.conversations,
+          messagesMap: parsed.messagesMap,
+          activeId: parsed.activeId,
+          convCounter: parsed.convCounter,
+          settings: parsed.settings || defaultSettings,
+        };
       }
     }
   } catch {
@@ -67,6 +74,7 @@ function loadState(): SavedState {
     messagesMap: { '1': initialMessages, '2': [] },
     activeId: '1',
     convCounter: 2,
+    settings: defaultSettings,
   };
 }
 
@@ -77,6 +85,7 @@ export default function App() {
   const [conversations, setConversations] = useState<Conversation[]>(saved.conversations);
   const [messagesMap, setMessagesMap] = useState<Record<string, Message[]>>(saved.messagesMap);
   const [activeId, setActiveId] = useState(saved.activeId);
+  const [settings, setSettings] = useState<AppSettings>(saved.settings);
   const convCounterRef = { current: saved.convCounter };
 
   // 持久化：任意状态变化时写入 localStorage
@@ -86,13 +95,14 @@ export default function App() {
       messagesMap,
       activeId,
       convCounter: convCounterRef.current,
+      settings,
     };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     } catch {
       // 存储满或隐私模式下静默失败
     }
-  }, [conversations, messagesMap, activeId]);
+  }, [conversations, messagesMap, activeId, settings]);
 
   const handleCreate = useCallback(() => {
     convCounterRef.current++;
@@ -167,6 +177,7 @@ export default function App() {
                     conversationId={activeId}
                     messages={messagesMap[activeId] || []}
                     onMessagesChange={(msgs) => handleMessagesChange(activeId, msgs)}
+                    inferenceParams={settings.inferenceParams}
                   />
                 </motion.div>
               }
@@ -181,7 +192,10 @@ export default function App() {
                   transition={{ duration: 0.2, ease: 'easeInOut' }}
                   className="flex-1 flex h-full min-w-0"
                 >
-                  <SettingsPage />
+                  <SettingsPage
+                    settings={settings}
+                    onSettingsChange={setSettings}
+                  />
                 </motion.div>
               }
             />

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Sun, Moon, ChevronDown, Plus, X, Trash2 } from 'lucide-react';
 import { useDarkMode } from '../hooks/useDarkMode';
+import type { InferenceParams, AppSettings, CustomModel } from '../types';
 
 type MenuKey = 'general' | 'model' | 'about';
 
@@ -10,13 +11,6 @@ const menuItems: { key: MenuKey; label: string }[] = [
   { key: 'model', label: '模型' },
   { key: 'about', label: '关于' },
 ];
-
-interface CustomModel {
-  name: string;
-  apiBase: string;
-  apiKey: string;
-  modelId: string;
-}
 
 const presetModels = [
   { label: 'GPT-5.5', value: 'gpt-5.5', provider: 'OpenAI' },
@@ -93,16 +87,19 @@ function ParamSlider({
   );
 }
 
-export default function SettingsPage() {
+interface SettingsPageProps {
+  settings: AppSettings;
+  onSettingsChange: (s: AppSettings) => void;
+}
+
+export default function SettingsPage({ settings, onSettingsChange }: SettingsPageProps) {
   const { isDark, toggle } = useDarkMode();
   const [activeMenu, setActiveMenu] = useState<MenuKey>('general');
 
   // 模型相关
-  const [selectedModel, setSelectedModel] = useState('gpt-5.5');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showCustomForm, setShowCustomForm] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
-  const [customModels, setCustomModels] = useState<CustomModel[]>([]);
   const [newCustom, setNewCustom] = useState<CustomModel>({
     name: '',
     apiBase: '',
@@ -110,28 +107,35 @@ export default function SettingsPage() {
     modelId: '',
   });
 
-  // 参数
-  const [temperature, setTemperature] = useState(0.7);
-  const [topP, setTopP] = useState(0.9);
-  const [maxTokens, setMaxTokens] = useState(4096);
-  const [frequencyPenalty, setFrequencyPenalty] = useState(0);
-  const [presencePenalty, setPresencePenalty] = useState(0);
-  const [seed, setSeed] = useState<number | undefined>(undefined);
+  const { inferenceParams, selectedModel, customModels } = settings;
+
+  const updateInference = (patch: Partial<InferenceParams>) => {
+    onSettingsChange({
+      ...settings,
+      inferenceParams: { ...inferenceParams, ...patch },
+    });
+  };
 
   const handleAddCustom = () => {
     if (!newCustom.name.trim() || !newCustom.modelId.trim()) return;
-    setCustomModels((prev) => [...prev, { ...newCustom }]);
+    const updated = [...customModels, { ...newCustom }];
+    onSettingsChange({
+      ...settings,
+      customModels: updated,
+      selectedModel: newCustom.modelId,
+    });
     setNewCustom({ name: '', apiBase: '', apiKey: '', modelId: '' });
     setShowCustomForm(false);
-    setSelectedModel(newCustom.modelId);
     setDropdownOpen(false);
   };
 
   const handleRemoveCustom = (modelId: string) => {
-    setCustomModels((prev) => prev.filter((m) => m.modelId !== modelId));
-    if (selectedModel === modelId) {
-      setSelectedModel('gpt-5.5');
-    }
+    const updated = customModels.filter((m) => m.modelId !== modelId);
+    onSettingsChange({
+      ...settings,
+      customModels: updated,
+      selectedModel: selectedModel === modelId ? 'gpt-5.5' : selectedModel,
+    });
   };
 
   const handleSelectModel = (value: string) => {
@@ -140,7 +144,7 @@ export default function SettingsPage() {
       setDropdownOpen(false);
       return;
     }
-    setSelectedModel(value);
+    onSettingsChange({ ...settings, selectedModel: value });
     setDropdownOpen(false);
   };
 
@@ -447,8 +451,8 @@ export default function SettingsPage() {
                   <ParamSlider
                     label="温度 (Temperature)"
                     tooltip="控制随机性，越高越有创意"
-                    value={temperature}
-                    onChange={setTemperature}
+                    value={inferenceParams.temperature}
+                    onChange={(v) => updateInference({ temperature: v })}
                     min={0}
                     max={2}
                     step={0.1}
@@ -459,8 +463,8 @@ export default function SettingsPage() {
                   <ParamSlider
                     label="Top P（核采样）"
                     tooltip="累积概率阈值，过滤低概率 token"
-                    value={topP}
-                    onChange={setTopP}
+                    value={inferenceParams.topP}
+                    onChange={(v) => updateInference({ topP: v })}
                     min={0}
                     max={1}
                     step={0.05}
@@ -483,8 +487,8 @@ export default function SettingsPage() {
                         min={128}
                         max={32768}
                         step={128}
-                        value={maxTokens}
-                        onChange={(e) => setMaxTokens(parseInt(e.target.value) || 4096)}
+                        value={inferenceParams.maxTokens}
+                        onChange={(e) => updateInference({ maxTokens: parseInt(e.target.value) || 4096 })}
                         className="w-28 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:border-primary"
                       />
                       <input
@@ -492,8 +496,8 @@ export default function SettingsPage() {
                         min={128}
                         max={32768}
                         step={128}
-                        value={maxTokens}
-                        onChange={(e) => setMaxTokens(parseInt(e.target.value))}
+                        value={inferenceParams.maxTokens}
+                        onChange={(e) => updateInference({ maxTokens: parseInt(e.target.value) })}
                         className="temperature-slider flex-1"
                       />
                     </div>
@@ -503,8 +507,8 @@ export default function SettingsPage() {
                     <ParamSlider
                       label="频率惩罚"
                       tooltip="降低重复词频率"
-                      value={frequencyPenalty}
-                      onChange={setFrequencyPenalty}
+                      value={inferenceParams.frequencyPenalty}
+                      onChange={(v) => updateInference({ frequencyPenalty: v })}
                       min={-2}
                       max={2}
                       step={0.1}
@@ -514,8 +518,8 @@ export default function SettingsPage() {
                     <ParamSlider
                       label="存在惩罚"
                       tooltip="鼓励引入新话题"
-                      value={presencePenalty}
-                      onChange={setPresencePenalty}
+                      value={inferenceParams.presencePenalty}
+                      onChange={(v) => updateInference({ presencePenalty: v })}
                       min={-2}
                       max={2}
                       step={0.1}
@@ -536,17 +540,17 @@ export default function SettingsPage() {
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
-                        value={seed ?? ''}
+                        value={inferenceParams.seed ?? ''}
                         onChange={(e) => {
                           const v = e.target.value;
-                          setSeed(v === '' ? undefined : parseInt(v));
+                          updateInference({ seed: v === '' ? undefined : parseInt(v) });
                         }}
                         placeholder="留空为随机"
                         className="w-36 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:border-primary"
                       />
-                      {seed !== undefined && (
+                      {inferenceParams.seed !== undefined && (
                         <button
-                          onClick={() => setSeed(undefined)}
+                          onClick={() => updateInference({ seed: undefined })}
                           className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                         >
                           清除

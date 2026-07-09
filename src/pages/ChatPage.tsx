@@ -4,6 +4,7 @@ import MessageBubble from '../components/chat/MessageBubble';
 import InputArea from '../components/chat/InputArea';
 import Drawer from '../components/common/Drawer';
 import AgentSelector, { agents, type Agent } from '../components/chat/AgentSelector';
+import type { InferenceParams } from '../types';
 
 const responsesByAgent: Record<string, string[]> = {
   general: [
@@ -38,15 +39,16 @@ const responsesByAgent: Record<string, string[]> = {
   ],
 };
 
-let messageCounter = 3;
-
-function generateId(): string {
-  messageCounter++;
-  return `m${messageCounter}`;
-}
-
-function pickResponse(agentId: string): string {
-  const pool = responsesByAgent[agentId] || responsesByAgent.general;
+function pickResponse(agentId: string, params: InferenceParams): string {
+  let pool = responsesByAgent[agentId] || responsesByAgent.general;
+  if (params.temperature > 1.0) {
+    const shuffled = [...pool];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    pool = shuffled;
+  }
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
@@ -54,9 +56,17 @@ interface ChatPageProps {
   conversationId: string;
   messages: Message[];
   onMessagesChange: (msgs: Message[]) => void;
+  inferenceParams: InferenceParams;
 }
 
-export default function ChatPage({ messages, onMessagesChange }: ChatPageProps) {
+export default function ChatPage({ messages, onMessagesChange, inferenceParams }: ChatPageProps) {
+  const messageCounterRef = useRef(3);
+
+  function generateId(): string {
+    messageCounterRef.current++;
+    return `m${messageCounterRef.current}`;
+  }
+
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -68,6 +78,8 @@ export default function ChatPage({ messages, onMessagesChange }: ChatPageProps) 
   onMessagesChangeRef.current = onMessagesChange;
   const currentAgentRef = useRef(selectedAgent);
   currentAgentRef.current = selectedAgent;
+  const inferenceParamsRef = useRef(inferenceParams);
+  inferenceParamsRef.current = inferenceParams;
 
   // 卸载时停定时器
   useEffect(() => {
@@ -80,6 +92,12 @@ export default function ChatPage({ messages, onMessagesChange }: ChatPageProps) 
 
   const handleSend = useCallback(
     (text: string) => {
+      // 发送前先清除上一个定时器，避免竞态
+      if (typingTimerRef.current !== null) {
+        window.clearInterval(typingTimerRef.current);
+        typingTimerRef.current = null;
+      }
+
       const userMsg: Message = { id: generateId(), role: 'user', content: text };
       const aiMsg: Message = { id: generateId(), role: 'assistant', content: '' };
       const baseMsgs = messages; // 发送前的消息列表，闭包锁定
@@ -89,13 +107,12 @@ export default function ChatPage({ messages, onMessagesChange }: ChatPageProps) 
       setInputValue('');
       setIsTyping(true);
 
-      const fullResponse = pickResponse(currentAgentRef.current.id);
+      const fullResponse = pickResponse(currentAgentRef.current.id, inferenceParamsRef.current);
       let charIndex = 0;
 
       typingTimerRef.current = window.setInterval(() => {
         charIndex++;
         if (charIndex <= fullResponse.length) {
-          // 每次基于锁定基准 + 用户消息 + 逐字 AI，不会累积
           onMessagesChangeRef.current([
             ...baseMsgs,
             userMsg,
