@@ -3,7 +3,7 @@
 面试笔试题
 
 - **GitHub**: https://github.com/Dr-baiye/demo2026
-- **Figma**: https://www.figma.com/design/2PFFUp3o8n3wjwctITXtx7
+- **Figma**: https://www.figma.com/design/jxXDbM4OhtSg9edLawsqk4
 
 ## 技术栈
 
