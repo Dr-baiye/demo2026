@@ -9,9 +9,9 @@ export default {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#10A37F',
-          hover: '#0E906F',
-          light: '#E6F7F2',
+          DEFAULT: '#10B981',
+          hover: '#059669',
+          light: '#ECFDF5',
         },
         'bg-gray': '#F9FAFB',
         'bubble-user': '#F3F4F6',
